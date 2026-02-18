@@ -148,7 +148,7 @@ button:hover {
     <div class="bar-container">
         <div class="label">HRADECKEGA</div>
         <div id="status-hradeckega" class="status">
-            <span class="countdown">132 s</span>
+            <span class="countdown">128 s</span>
             <span class="speed">0 km/h</span>
         </div>
         <div class="progress"><div id="hradeckega" class="progress-fill"></div></div>
@@ -157,7 +157,7 @@ button:hover {
     <div class="bar-container">
         <div class="label">STRELIŠČE</div>
         <div id="status-strelisce" class="status">
-            <span class="countdown">111 s</span>
+            <span class="countdown">110 s</span>
             <span class="speed">0 km/h</span>
         </div>
         <div class="progress"><div id="strelisce" class="progress-fill"></div></div>
@@ -166,7 +166,7 @@ button:hover {
     <div class="bar-container">
         <div class="label">RAKOVNIK</div>
         <div id="status-rakovnik" class="status">
-            <span class="countdown">68 s</span>
+            <span class="countdown">75 s</span>
             <span class="speed">0 km/h</span>
         </div>
         <div class="progress"><div id="rakovnik" class="progress-fill"></div></div>
@@ -195,9 +195,9 @@ let currentPointIndex = 0;
 
 const points = {
     roska: { total: 150, lat: 46.04268898236834, lon: 14.513960927098237 },
-    hradeckega: { total: 132, lat: 46.040983793123274, lon: 14.515575472878833 },
-    strelisce: { total: 111, lat: 46.038817655484046, lon: 14.517582009508144 },
-    rakovnik: { total: 68, lat: 46.03576779528606, lon: 14.523713057522503 }
+    hradeckega: { total: 128, lat: 46.040983793123274, lon: 14.515575472878833 },
+    strelisce: { total: 110, lat: 46.038817655484046, lon: 14.517582009508144 },
+    rakovnik: { total: 75, lat: 46.03576779528606, lon: 14.523713057522503 }
 };
 
 let remainingTimes = {};
@@ -291,6 +291,7 @@ function updateAll(){
         speedEl.textContent = requiredKmh.toFixed(1) + " km/h";
     }
 
+    // Update vertical speed bar only for current point
     if(currentPointIndex < pointOrder.length){
         const pid = pointOrder[currentPointIndex];
         if(remainingTimes[pid]<=0){
@@ -307,6 +308,7 @@ function updateAll(){
     }
 }
 
+// Vertical speed dot logic
 function updateSpeedDot(currentKmh, requiredKmh){
     const container = document.querySelector('.speed-bar-container');
     const dot = document.getElementById('speed-dot');
@@ -334,16 +336,16 @@ function updateSpeedDot(currentKmh, requiredKmh){
     }
 }
 
+// Haversine formula
 function calculateDistance(lat1,lon1,lat2,lon2){
     const R=6371000;
     const toRad=x=>x*Math.PI/180;
     const dLat=toRad(lat2-lat1);
     const dLon=toRad(lon2-lon1);
     const a=Math.sin(dLat/2)**2 + Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLon/2)**2;
-    const c=2*Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    const c=2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
     return R*c;
 }
 </script>
-
 </body>
 </html>
