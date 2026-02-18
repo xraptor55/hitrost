@@ -4,14 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Aviation Countdown Panel</title>
-
 <style>
 body {
     display: flex;
     justify-content: center;
     align-items: flex-start;
     padding-top: 50px;
-    height: 100vh;
     background-color: #1a1f24;
     font-family: "Courier New", monospace;
     color: #00ff88;
@@ -29,21 +27,25 @@ body {
 
 .label {
     width: 90px;
-    font-size: 0.8rem; /* smaller names */
+    font-size: 0.8rem; 
     letter-spacing: 1px;
 }
 
 .status {
     width: 160px;
-    font-size: 1.5rem;
     font-weight: bold;
     margin-right: 15px;
     text-align: right;
 }
 
-.countdown {
-    font-size: 0.9rem; /* smaller seconds countdown */
+.status .countdown {
+    font-size: 0.9rem; 
+}
+
+.status .speed {
+    font-size: 1.5rem; 
     display: block;
+    margin-top: 2px;
 }
 
 .progress {
@@ -108,9 +110,9 @@ button:hover {
     opacity: 0.8;
 }
 
-/* Vertical speed bar container */
+/* Vertical speed bar */
 .speed-bar-container {
-    width: 40px;
+    width: 50px;
     height: 400px;
     background-color: #222;
     border: 2px solid #00ff88;
@@ -122,49 +124,52 @@ button:hover {
 .speed-bar-dot {
     position: absolute;
     left: -5px;
-    width: 50px;
-    height: 6px;
-    border-radius: 3px;
+    width: 60px;  /* bigger for visibility */
+    height: 12px;  /* bigger */
+    border-radius: 6px;
     background-color: green;
     transition: top 0.5s, background-color 0.5s;
 }
 </style>
 </head>
-
 <body>
 
 <div class="container">
 
     <div class="bar-container">
         <div class="label">ROŠKA</div>
-        <div id="status-roska" class="status"><span class="countdown">232 s</span> | 0 km/h</div>
-        <div class="progress">
-            <div id="roska" class="progress-fill"></div>
+        <div id="status-roska" class="status">
+            <span class="countdown">232 s</span>
+            <span class="speed">0 km/h</span>
         </div>
+        <div class="progress"><div id="roska" class="progress-fill"></div></div>
     </div>
 
     <div class="bar-container">
         <div class="label">HRADECKEGA</div>
-        <div id="status-hradeckega" class="status"><span class="countdown">201 s</span> | 0 km/h</div>
-        <div class="progress">
-            <div id="hradeckega" class="progress-fill"></div>
+        <div id="status-hradeckega" class="status">
+            <span class="countdown">201 s</span>
+            <span class="speed">0 km/h</span>
         </div>
+        <div class="progress"><div id="hradeckega" class="progress-fill"></div></div>
     </div>
 
     <div class="bar-container">
         <div class="label">STRELIŠČE</div>
-        <div id="status-strelisce" class="status"><span class="countdown">181 s</span> | 0 km/h</div>
-        <div class="progress">
-            <div id="strelisce" class="progress-fill"></div>
+        <div id="status-strelisce" class="status">
+            <span class="countdown">181 s</span>
+            <span class="speed">0 km/h</span>
         </div>
+        <div class="progress"><div id="strelisce" class="progress-fill"></div></div>
     </div>
 
     <div class="bar-container">
         <div class="label">RAKOVNIK</div>
-        <div id="status-rakovnik" class="status"><span class="countdown">121 s</span> | 0 km/h</div>
-        <div class="progress">
-            <div id="rakovnik" class="progress-fill"></div>
+        <div id="status-rakovnik" class="status">
+            <span class="countdown">121 s</span>
+            <span class="speed">0 km/h</span>
         </div>
+        <div class="progress"><div id="rakovnik" class="progress-fill"></div></div>
     </div>
 
     <div class="buttons">
@@ -174,7 +179,6 @@ button:hover {
 
 </div>
 
-<!-- Vertical speed comparison bar -->
 <div class="speed-bar-container">
     <div id="speed-dot" class="speed-bar-dot"></div>
 </div>
@@ -184,10 +188,10 @@ let timer = null;
 let watchId = null;
 let currentLat = null;
 let currentLon = null;
-let currentSpeed = 0; // meters/sec
+let currentSpeed = 0;
 
-const pointOrder = ['rakovnik', 'strelisce', 'hradeckega', 'roska']; // order for speed comparison
-let currentPointIndex = 0; // index for speed bar
+const pointOrder = ['rakovnik','strelisce','hradeckega','roska'];
+let currentPointIndex = 0;
 
 const points = {
     roska: { total: 232, lat: 46.04268898236834, lon: 14.513960927098237 },
@@ -201,13 +205,11 @@ function initTimes() {
     currentPointIndex = 0;
     for (let id in points) {
         remainingTimes[id] = points[id].total;
-        const statusEl = document.getElementById('status-' + id);
-        statusEl.querySelector('.countdown').innerText = points[id].total + " s";
-        statusEl.childNodes[2].nodeValue = " | 0 km/h";
-        const bar = document.getElementById(id);
-        bar.style.width = "0%";
-        bar.classList.remove("flash");
-        bar.innerText = "";
+        document.querySelector(`#status-${id} .countdown`).textContent = points[id].total + " s";
+        document.querySelector(`#status-${id} .speed`).textContent = "0 km/h";
+        document.getElementById(id).style.width = "0%";
+        document.getElementById(id).classList.remove("flash");
+        document.getElementById(id).innerText = "";
     }
 }
 initTimes();
@@ -216,15 +218,15 @@ let lastLat = null;
 let lastLon = null;
 let lastTime = null;
 
-document.getElementById("startButton").addEventListener("click", function() {
-    if (timer) return;
+document.getElementById("startButton").addEventListener("click", () => {
+    if(timer) return;
 
-    if (!watchId) {
+    if(!watchId){
         watchId = navigator.geolocation.watchPosition(
             pos => {
-                if (currentLat !== null && lastTime) {
+                if(currentLat !== null && lastTime){
                     const dt = (pos.timestamp - lastTime)/1000;
-                    const dist = calculateDistance(currentLat, currentLon, pos.coords.latitude, pos.coords.longitude);
+                    const dist = calculateDistance(currentLat,currentLon,pos.coords.latitude,pos.coords.longitude);
                     if(dt>0) currentSpeed = dist/dt;
                 }
                 lastLat = currentLat;
@@ -233,118 +235,115 @@ document.getElementById("startButton").addEventListener("click", function() {
                 currentLat = pos.coords.latitude;
                 currentLon = pos.coords.longitude;
             },
-            err => { alert("Enable GPS for speed calculation."); },
-            { enableHighAccuracy: true }
+            err => alert("Enable GPS for speed calculation."),
+            { enableHighAccuracy:true }
         );
     }
 
-    timer = setInterval(updateAll, 1000);
+    timer = setInterval(updateAll,1000);
     updateAll();
 });
 
-document.getElementById("resetButton").addEventListener("click", function() {
+document.getElementById("resetButton").addEventListener("click", ()=>{
     clearInterval(timer);
-    timer = null;
-    currentSpeed = 0;
+    timer=null;
+    currentSpeed=0;
     initTimes();
 });
 
-function updateAll() {
+function updateAll(){
     let allFinished = true;
 
-    for (let id in points) {
+    for(let id in points){
         const total = points[id].total;
-        if (remainingTimes[id] > 0) {
+        if(remainingTimes[id]>0){
             remainingTimes[id]--;
-            allFinished = false;
+            allFinished=false;
         }
 
         const remaining = remainingTimes[id];
-        const percent = ((total - remaining)/total)*100;
+        const percent = ((total-remaining)/total)*100;
         const bar = document.getElementById(id);
         bar.style.width = percent + "%";
 
-        const statusEl = document.getElementById('status-'+id);
-        const countdownEl = statusEl.querySelector('.countdown');
+        const countdownEl = document.querySelector(`#status-${id} .countdown`);
+        const speedEl = document.querySelector(`#status-${id} .speed`);
 
-        if (remaining <= 0) {
-            countdownEl.innerText = "0 s";
-            bar.innerText = "GO!!!";
+        if(remaining<=0){
+            countdownEl.textContent = "0 s";
+            bar.innerText="GO!!!";
             bar.classList.add("flash");
+            speedEl.textContent="";
             continue;
         }
 
-        if (currentLat === null || currentLon === null) {
-            countdownEl.innerText = remaining + " s";
-            statusEl.childNodes[2].nodeValue = " | GPS...";
+        if(currentLat===null || currentLon===null){
+            countdownEl.textContent = remaining + " s";
+            speedEl.textContent = "GPS...";
             continue;
         }
 
-        const distance = calculateDistance(currentLat, currentLon, points[id].lat, points[id].lon);
-        const requiredSpeed = distance / remaining;
+        const distance = calculateDistance(currentLat,currentLon,points[id].lat,points[id].lon);
+        const requiredSpeed = distance/remaining;
         const requiredKmh = requiredSpeed*3.6;
 
-        countdownEl.innerText = remaining + " s";
-        statusEl.childNodes[2].nodeValue = " | " + requiredKmh.toFixed(1) + " km/h";
+        countdownEl.textContent = remaining + " s";
+        speedEl.textContent = requiredKmh.toFixed(1) + " km/h";
     }
 
     // Update vertical speed bar only for current point
     if(currentPointIndex < pointOrder.length){
-        const pointId = pointOrder[currentPointIndex];
-        if(remainingTimes[pointId] <= 0) {
+        const pid = pointOrder[currentPointIndex];
+        if(remainingTimes[pid]<=0){
             currentPointIndex++;
         } else {
-            const statusEl = document.getElementById('status-' + pointId);
-            const text = statusEl.childNodes[2].nodeValue;
-            const requiredKmh = parseFloat(text.split('|')[1]);
+            const requiredKmh = parseFloat(document.querySelector(`#status-${pid} .speed`).textContent);
             updateSpeedDot(currentSpeed*3.6, requiredKmh);
         }
     }
 
     if(allFinished){
         clearInterval(timer);
-        timer = null;
+        timer=null;
     }
 }
 
-// Speed dot logic
+// Vertical speed dot logic
 function updateSpeedDot(currentKmh, requiredKmh){
     const container = document.querySelector('.speed-bar-container');
     const dot = document.getElementById('speed-dot');
     const height = container.clientHeight;
 
-    const maxDeviation = 20;
+    const maxDeviation=20;
     let deviation = currentKmh - requiredKmh;
-    if(deviation > maxDeviation) deviation = maxDeviation;
-    if(deviation < -maxDeviation) deviation = -maxDeviation;
+    deviation = Math.max(Math.min(deviation,maxDeviation),-maxDeviation);
 
     const center = height/2;
     const scale = (height/2)/maxDeviation;
     let top = center - deviation*scale - dot.clientHeight/2;
-    if(top <0) top=0;
-    if(top>height-dot.clientHeight) top = height-dot.clientHeight;
+    top = Math.max(0, Math.min(top,height-dot.clientHeight));
 
     dot.style.top = top + "px";
 
-    if(Math.abs(deviation) <= 2){
-        dot.style.backgroundColor = "green";
-    } else if(deviation > 2){
+    if(Math.abs(deviation)<=2){
+        dot.style.backgroundColor="green";
+    } else if(deviation>2){
         let redLevel = Math.min(255, Math.round((deviation-2)/2*50));
-        let greenLevel = Math.max(0, 255-redLevel);
-        dot.style.backgroundColor = `rgb(${redLevel},${greenLevel},0)`;
+        let greenLevel = Math.max(0,255-redLevel);
+        dot.style.backgroundColor=`rgb(${redLevel},${greenLevel},0)`;
     } else {
-        dot.style.backgroundColor = "yellow";
+        dot.style.backgroundColor="yellow";
     }
 }
 
 // Haversine formula
-function calculateDistance(lat1, lon1, lat2, lon2){
-    const R = 6371000;
-    const toRad = x => x*Math.PI/180;
-    const dLat = toRad(lat2-lat1);
-    const dLon = toRad(lon2-lon1);
-    const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLon/2)**2;
-    const c = 2*Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+function calculateDistance(lat1,lon1,lat2,lon2){
+    const R=6371000;
+    const toRad=x=>x*Math.PI/180;
+    const dLat=toRad(lat2-lat1);
+    const dLon=toRad(lon2-lon1);
+    const a=Math.sin(dLat/2)**2 + Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLon/2)**2;
+    const c=2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
     return R*c;
 }
 </script>
