@@ -1,134 +1,110 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Countdown Speed Calculator</title>
-
-<style>
-    body {
-        font-family: Arial, sans-serif;
-        background: #111;
-        color: white;
-        text-align: center;
-        padding-top: 100px;
-    }
-
-    #startBtn {
-        padding: 15px 40px;
-        font-size: 20px;
-        background: #00aa00;
-        color: white;
-        border: none;
-        cursor: pointer;
-        border-radius: 8px;
-    }
-
-    #speedDisplay {
-        font-size: 28px;
-        margin-bottom: 20px;
-    }
-
-    .progress-container {
-        width: 80%;
-        height: 40px;
-        background: #333;
-        margin: auto;
-        border-radius: 20px;
-        overflow: hidden;
-        border: 2px solid #00ff00;
-    }
-
-    .progress-bar {
-        height: 100%;
-        width: 0%;
-        background: limegreen;
-        transition: width 1s linear;
-    }
-
-    .flash {
-        animation: flashGreen 0.5s infinite alternate;
-    }
-
-    @keyframes flashGreen {
-        from { background: limegreen; }
-        to { background: #00ff00; }
-    }
-</style>
-</head>
-
-<body>
-
-<button id="startBtn">START</button>
-
-<div id="speedDisplay"></div>
-
-<div class="progress-container">
-    <div id="progressBar" class="progress-bar"></div>
-</div>
-
 <script>
-const TARGET_LAT = 46.03576779528606;
-const TARGET_LON = 14.523713057522503;
+let timer = null;
 
-let totalTime = 44;
-let timeLeft = totalTime;
-let interval;
+const points = {
+    roska: {
+        total: 232,
+        lat: 46.04268898236834,
+        lon: 14.513960927098237
+    },
+    hradeckega: {
+        total: 201,
+        lat: 46.040983793123274,
+        lon: 14.515575472878833
+    },
+    strelisce: {
+        total: 181,
+        lat: 46.038817655484046,
+        lon: 14.517582009508144
+    },
+    rakovnik: {
+        total: 121,
+        lat: 46.03576779528606,
+        lon: 14.523713057522503
+    }
+};
 
-const startBtn = document.getElementById("startBtn");
-const progressBar = document.getElementById("progressBar");
-const speedDisplay = document.getElementById("speedDisplay");
+let remainingTimes = {};
+for (let id in points) {
+    remainingTimes[id] = points[id].total;
+}
 
-startBtn.addEventListener("click", () => {
-    startBtn.disabled = true;
-    timeLeft = totalTime;
-    progressBar.style.width = "0%";
-    progressBar.classList.remove("flash");
+document.getElementById("startButton").addEventListener("click", function() {
+    if (timer) return;
 
-    interval = setInterval(updateTimer, 1000);
-    updateTimer();
+    timer = setInterval(updateAll, 1000);
+    updateAll();
 });
 
-function updateTimer() {
-    if (timeLeft <= 0) {
-        clearInterval(interval);
-        progressBar.style.width = "100%";
-        progressBar.classList.add("flash");
-        speedDisplay.innerText = "TIME REACHED";
-        return;
+document.getElementById("resetButton").addEventListener("click", function() {
+    clearInterval(timer);
+    timer = null;
+
+    for (let id in points) {
+        remainingTimes[id] = points[id].total;
+        const el = document.getElementById(id);
+        el.style.width = "0%";
+        el.classList.remove("flash");
+        el.innerText = points[id].total;
     }
+});
+
+function updateAll() {
 
     navigator.geolocation.getCurrentPosition(position => {
+
         const currentLat = position.coords.latitude;
         const currentLon = position.coords.longitude;
 
-        const distance = calculateDistance(
-            currentLat,
-            currentLon,
-            TARGET_LAT,
-            TARGET_LON
-        ); // meters
+        let allFinished = true;
 
-        const requiredSpeed = distance / timeLeft; // m/s
-        const requiredSpeedKmh = requiredSpeed * 3.6;
+        for (let id in points) {
 
-        speedDisplay.innerText =
-            "Required Speed: " + requiredSpeedKmh.toFixed(2) + " km/h";
-    },
-    error => {
-        speedDisplay.innerText = "Enable GPS to calculate speed.";
+            if (remainingTimes[id] > 0) {
+                remainingTimes[id]--;
+                allFinished = false;
+            }
+
+            const total = points[id].total;
+            const remaining = remainingTimes[id];
+            const el = document.getElementById(id);
+
+            const percent = ((total - remaining) / total) * 100;
+            el.style.width = percent + "%";
+
+            if (remaining > 0) {
+                const distance = calculateDistance(
+                    currentLat,
+                    currentLon,
+                    points[id].lat,
+                    points[id].lon
+                );
+
+                const requiredSpeed = distance / remaining; // m/s
+                const requiredKmh = requiredSpeed * 3.6;
+
+                el.innerText = requiredKmh.toFixed(1) + " km/h";
+            } else {
+                el.innerText = "ARRIVED";
+                el.classList.add("flash");
+            }
+        }
+
+        if (allFinished) {
+            clearInterval(timer);
+            timer = null;
+        }
+
+    }, error => {
+        console.log("GPS required");
     });
-
-    timeLeft--;
-
-    const progressPercent = ((totalTime - timeLeft) / totalTime) * 100;
-    progressBar.style.width = progressPercent + "%";
 }
 
-// Haversine Formula
+
+// Haversine formula
 function calculateDistance(lat1, lon1, lat2, lon2) {
-    const R = 6371000; // Earth radius in meters
-    const toRad = angle => angle * Math.PI / 180;
+    const R = 6371000;
+    const toRad = x => x * Math.PI / 180;
 
     const dLat = toRad(lat2 - lat1);
     const dLon = toRad(lon2 - lon1);
@@ -143,6 +119,3 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
     return R * c;
 }
 </script>
-
-</body>
-</html>
