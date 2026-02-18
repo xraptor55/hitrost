@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Countdown Speed Calculator</title>
+
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background: #111;
+        color: white;
+        text-align: center;
+        padding-top: 100px;
+    }
+
+    #startBtn {
+        padding: 15px 40px;
+        font-size: 20px;
+        background: #00aa00;
+        color: white;
+        border: none;
+        cursor: pointer;
+        border-radius: 8px;
+    }
+
+    #speedDisplay {
+        font-size: 28px;
+        margin-bottom: 20px;
+    }
+
+    .progress-container {
+        width: 80%;
+        height: 40px;
+        background: #333;
+        margin: auto;
+        border-radius: 20px;
+        overflow: hidden;
+        border: 2px solid #00ff00;
+    }
+
+    .progress-bar {
+        height: 100%;
+        width: 0%;
+        background: limegreen;
+        transition: width 1s linear;
+    }
+
+    .flash {
+        animation: flashGreen 0.5s infinite alternate;
+    }
+
+    @keyframes flashGreen {
+        from { background: limegreen; }
+        to { background: #00ff00; }
+    }
+</style>
+</head>
+
+<body>
+
+<button id="startBtn">START</button>
+
+<div id="speedDisplay"></div>
+
+<div class="progress-container">
+    <div id="progressBar" class="progress-bar"></div>
+</div>
+
+<script>
+const TARGET_LAT = 46.03576779528606;
+const TARGET_LON = 14.523713057522503;
+
+let totalTime = 44;
+let timeLeft = totalTime;
+let interval;
+
+const startBtn = document.getElementById("startBtn");
+const progressBar = document.getElementById("progressBar");
+const speedDisplay = document.getElementById("speedDisplay");
+
+startBtn.addEventListener("click", () => {
+    startBtn.disabled = true;
+    timeLeft = totalTime;
+    progressBar.style.width = "0%";
+    progressBar.classList.remove("flash");
+
+    interval = setInterval(updateTimer, 1000);
+    updateTimer();
+});
+
+function updateTimer() {
+    if (timeLeft <= 0) {
+        clearInterval(interval);
+        progressBar.style.width = "100%";
+        progressBar.classList.add("flash");
+        speedDisplay.innerText = "TIME REACHED";
+        return;
+    }
+
+    navigator.geolocation.getCurrentPosition(position => {
+        const currentLat = position.coords.latitude;
+        const currentLon = position.coords.longitude;
+
+        const distance = calculateDistance(
+            currentLat,
+            currentLon,
+            TARGET_LAT,
+            TARGET_LON
+        ); // meters
+
+        const requiredSpeed = distance / timeLeft; // m/s
+        const requiredSpeedKmh = requiredSpeed * 3.6;
+
+        speedDisplay.innerText =
+            "Required Speed: " + requiredSpeedKmh.toFixed(2) + " km/h";
+    },
+    error => {
+        speedDisplay.innerText = "Enable GPS to calculate speed.";
+    });
+
+    timeLeft--;
+
+    const progressPercent = ((totalTime - timeLeft) / totalTime) * 100;
+    progressBar.style.width = progressPercent + "%";
+}
+
+// Haversine Formula
+function calculateDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371000; // Earth radius in meters
+    const toRad = angle => angle * Math.PI / 180;
+
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+
+    const a =
+        Math.sin(dLat/2) * Math.sin(dLat/2) +
+        Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+        Math.sin(dLon/2) * Math.sin(dLon/2);
+
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+    return R * c;
+}
+</script>
+
+</body>
+</html>
