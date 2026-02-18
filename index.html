@@ -1,5 +1,8 @@
 <script>
 let timer = null;
+let watchId = null;
+let currentLat = null;
+let currentLon = null;
 
 const points = {
     roska: {
@@ -25,17 +28,39 @@ const points = {
 };
 
 let remainingTimes = {};
-for (let id in points) {
-    remainingTimes[id] = points[id].total;
-}
 
+function initTimes() {
+    for (let id in points) {
+        remainingTimes[id] = points[id].total;
+    }
+}
+initTimes();
+
+
+// START BUTTON
 document.getElementById("startButton").addEventListener("click", function() {
     if (timer) return;
+
+    // Start GPS tracking once
+    if (!watchId) {
+        watchId = navigator.geolocation.watchPosition(
+            position => {
+                currentLat = position.coords.latitude;
+                currentLon = position.coords.longitude;
+            },
+            error => {
+                alert("Enable GPS for speed calculation.");
+            },
+            { enableHighAccuracy: true }
+        );
+    }
 
     timer = setInterval(updateAll, 1000);
     updateAll();
 });
 
+
+// RESET BUTTON
 document.getElementById("resetButton").addEventListener("click", function() {
     clearInterval(timer);
     timer = null;
@@ -45,63 +70,63 @@ document.getElementById("resetButton").addEventListener("click", function() {
         const el = document.getElementById(id);
         el.style.width = "0%";
         el.classList.remove("flash");
-        el.innerText = points[id].total;
+        el.innerText = points[id].total + " s";
     }
 });
 
+
 function updateAll() {
 
-    navigator.geolocation.getCurrentPosition(position => {
+    let allFinished = true;
 
-        const currentLat = position.coords.latitude;
-        const currentLon = position.coords.longitude;
+    for (let id in points) {
 
-        let allFinished = true;
+        const el = document.getElementById(id);
+        const total = points[id].total;
 
-        for (let id in points) {
-
-            if (remainingTimes[id] > 0) {
-                remainingTimes[id]--;
-                allFinished = false;
-            }
-
-            const total = points[id].total;
-            const remaining = remainingTimes[id];
-            const el = document.getElementById(id);
-
-            const percent = ((total - remaining) / total) * 100;
-            el.style.width = percent + "%";
-
-            if (remaining > 0) {
-                const distance = calculateDistance(
-                    currentLat,
-                    currentLon,
-                    points[id].lat,
-                    points[id].lon
-                );
-
-                const requiredSpeed = distance / remaining; // m/s
-                const requiredKmh = requiredSpeed * 3.6;
-
-                el.innerText = requiredKmh.toFixed(1) + " km/h";
-            } else {
-                el.innerText = "ARRIVED";
-                el.classList.add("flash");
-            }
+        if (remainingTimes[id] > 0) {
+            remainingTimes[id]--;
+            allFinished = false;
         }
 
-        if (allFinished) {
-            clearInterval(timer);
-            timer = null;
+        const remaining = remainingTimes[id];
+        const percent = ((total - remaining) / total) * 100;
+        el.style.width = percent + "%";
+
+        if (remaining <= 0) {
+            el.innerText = "ARRIVED";
+            el.classList.add("flash");
+            continue;
         }
 
-    }, error => {
-        console.log("GPS required");
-    });
+        if (currentLat === null || currentLon === null) {
+            el.innerText = remaining + " s | GPS...";
+            continue;
+        }
+
+        const distance = calculateDistance(
+            currentLat,
+            currentLon,
+            points[id].lat,
+            points[id].lon
+        );
+
+        const requiredSpeed = distance / remaining; // m/s
+        const requiredKmh = requiredSpeed * 3.6;
+
+        el.innerText =
+            remaining + " s | " +
+            requiredKmh.toFixed(1) + " km/h";
+    }
+
+    if (allFinished) {
+        clearInterval(timer);
+        timer = null;
+    }
 }
 
 
-// Haversine formula
+// Haversine
 function calculateDistance(lat1, lon1, lat2, lon2) {
     const R = 6371000;
     const toRad = x => x * Math.PI / 180;
