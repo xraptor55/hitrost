@@ -6,101 +6,125 @@
 <title>Aviation Countdown Panel</title>
 
 <style>
-    body {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        height: 100vh;
-        background-color: #1a1f24;
-        font-family: "Courier New", monospace;
-        color: #00ff88;
-    }
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: #1a1f24;
+    font-family: "Courier New", monospace;
+    color: #00ff88;
+}
 
-    .container {
-        width: 600px;
-        text-align: left;
-    }
+.container {
+    width: 700px;
+    text-align: left;
+}
 
-    .bar-container {
-        display: flex;
-        align-items: center;
-        margin: 25px 0;
-    }
+.bar-container {
+    display: flex;
+    align-items: center;
+    margin: 20px 0;
+}
 
-    .label {
-        width: 120px;
-        font-size: 1.2rem;
-        letter-spacing: 2px;
-    }
+.label {
+    width: 90px;
+    font-size: 0.9rem;
+    letter-spacing: 1px;
+}
 
-    .status {
-        width: 150px;
-        font-size: 1rem;
-        margin-right: 15px;
-        text-align: right;
-    }
+.status {
+    width: 160px;
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin-right: 15px;
+    text-align: right;
+}
 
-    .progress {
-        flex-grow: 1;
-        height: 40px;
-        background-color: #2a2f36;
-        border-radius: 6px;
-        overflow: hidden;
-        position: relative;
-        border: 2px solid #00ff88;
-        box-shadow: 0 0 10px #00ff88 inset;
-    }
+.progress {
+    flex-grow: 1;
+    height: 50px;
+    background-color: #2a2f36;
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
+    border: 2px solid #00ff88;
+    box-shadow: 0 0 12px #00ff88 inset;
+}
 
-    .progress-fill {
-        height: 100%;
-        width: 0%;
-        background: linear-gradient(to right, #004d2b, #00ff88);
-        transition: width 1s linear;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: bold;
-        color: black;
-    }
+.progress-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(to right, #004d2b, #00ff88);
+    transition: width 1s linear;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    color: black;
+}
 
-    .flash {
-        animation: flashGreen 0.8s infinite;
-    }
+.flash {
+    animation: flashGreen 0.8s infinite;
+}
 
-    @keyframes flashGreen {
-        0% { background: #00ff88; }
-        50% { background: #33ff33; }
-        100% { background: #00ff88; }
-    }
+@keyframes flashGreen {
+    0% { background: #00ff88; }
+    50% { background: #33ff33; }
+    100% { background: #00ff88; }
+}
 
-    .buttons {
-        margin-top: 40px;
-        display: flex;
-        justify-content: center;
-        gap: 15px;
-    }
+.buttons {
+    margin-top: 30px;
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+}
 
-    #startButton {
-        padding: 14px 40px;
-        font-size: 1.3rem;
-        background-color: #00ff88;
-        border: none;
-        cursor: pointer;
-        font-weight: bold;
-    }
+#startButton {
+    padding: 14px 40px;
+    font-size: 1.3rem;
+    background-color: #00ff88;
+    border: none;
+    cursor: pointer;
+    font-weight: bold;
+}
 
-    #resetButton {
-        padding: 6px 18px;
-        font-size: 0.8rem;
-        background-color: #555;
-        color: white;
-        border: none;
-        cursor: pointer;
-    }
+#resetButton {
+    padding: 6px 18px;
+    font-size: 0.8rem;
+    background-color: #555;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
 
-    button:hover {
-        opacity: 0.8;
-    }
+button:hover {
+    opacity: 0.8;
+}
+
+/* Vertical speed bar */
+.speed-bar-container {
+    position: absolute;
+    right: 40px;
+    top: 50px;
+    width: 20px;
+    height: 400px;
+    background-color: #222;
+    border: 2px solid #00ff88;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.speed-bar-dot {
+    position: absolute;
+    left: -5px;
+    width: 30px;
+    height: 6px;
+    border-radius: 3px;
+    background-color: green;
+    transition: top 0.5s, background-color 0.5s;
+}
 </style>
 </head>
 
@@ -147,11 +171,17 @@
 
 </div>
 
+<!-- Vertical speed comparison bar -->
+<div class="speed-bar-container">
+    <div id="speed-dot" class="speed-bar-dot"></div>
+</div>
+
 <script>
 let timer = null;
 let watchId = null;
 let currentLat = null;
 let currentLon = null;
+let currentSpeed = 0; // meters/sec
 
 const points = {
     roska: { total: 232, lat: 46.04268898236834, lon: 14.513960927098237 },
@@ -161,24 +191,38 @@ const points = {
 };
 
 let remainingTimes = {};
-
 function initTimes() {
     for (let id in points) {
         remainingTimes[id] = points[id].total;
         document.getElementById('status-' + id).innerText = points[id].total + " s | 0 km/h";
         document.getElementById(id).style.width = "0%";
         document.getElementById(id).classList.remove("flash");
+        document.getElementById(id).innerText = "";
     }
 }
 initTimes();
 
-// START BUTTON
+let lastLat = null;
+let lastLon = null;
+let lastTime = null;
+
 document.getElementById("startButton").addEventListener("click", function() {
     if (timer) return;
 
     if (!watchId) {
         watchId = navigator.geolocation.watchPosition(
-            pos => { currentLat = pos.coords.latitude; currentLon = pos.coords.longitude; },
+            pos => {
+                if (currentLat !== null) {
+                    const dt = (pos.timestamp - lastTime) / 1000; // sec
+                    const dist = calculateDistance(currentLat, currentLon, pos.coords.latitude, pos.coords.longitude);
+                    if(dt > 0) currentSpeed = dist / dt; // m/s
+                }
+                lastLat = currentLat;
+                lastLon = currentLon;
+                lastTime = pos.timestamp;
+                currentLat = pos.coords.latitude;
+                currentLon = pos.coords.longitude;
+            },
             err => { alert("Enable GPS for speed calculation."); },
             { enableHighAccuracy: true }
         );
@@ -188,15 +232,16 @@ document.getElementById("startButton").addEventListener("click", function() {
     updateAll();
 });
 
-// RESET BUTTON
 document.getElementById("resetButton").addEventListener("click", function() {
     clearInterval(timer);
     timer = null;
+    currentSpeed = 0;
     initTimes();
 });
 
 function updateAll() {
     let allFinished = true;
+    let requiredSpeedMax = 0;
 
     for (let id in points) {
         const total = points[id].total;
@@ -225,17 +270,53 @@ function updateAll() {
         }
 
         const distance = calculateDistance(currentLat, currentLon, points[id].lat, points[id].lon);
-        const requiredSpeed = distance / remaining;
+        const requiredSpeed = distance / remaining; // m/s
         const requiredKmh = requiredSpeed * 3.6;
+        if(requiredKmh > requiredSpeedMax) requiredSpeedMax = requiredKmh;
 
         statusEl.innerText = remaining + " s | " + requiredKmh.toFixed(1) + " km/h";
-        bar.innerText = ""; // clear inside bar
+        bar.innerText = "";
         bar.classList.remove("flash");
     }
+
+    updateSpeedDot(currentSpeed*3.6, requiredSpeedMax);
 
     if (allFinished) {
         clearInterval(timer);
         timer = null;
+    }
+}
+
+// Speed dot logic
+function updateSpeedDot(currentKmh, requiredKmh) {
+    const container = document.querySelector('.speed-bar-container');
+    const dot = document.getElementById('speed-dot');
+    const height = container.clientHeight;
+
+    // position: center = required speed
+    const maxDeviation = 20; // km/h visual range
+    let deviation = currentKmh - requiredKmh;
+    if(deviation > maxDeviation) deviation = maxDeviation;
+    if(deviation < -maxDeviation) deviation = -maxDeviation;
+
+    const center = height/2;
+    const scale = (height/2) / maxDeviation;
+    let top = center - deviation * scale - dot.clientHeight/2;
+    if(top < 0) top = 0;
+    if(top > height - dot.clientHeight) top = height - dot.clientHeight;
+
+    dot.style.top = top + "px";
+
+    // color logic
+    if(Math.abs(deviation) <= 2) {
+        dot.style.backgroundColor = "green";
+    } else if(deviation > 2) {
+        let redLevel = Math.min(255, Math.round((deviation-2)/2*50));
+        let greenLevel = Math.max(0, 255 - redLevel);
+        dot.style.backgroundColor = `rgb(${redLevel},${greenLevel},0)`;
+    } else {
+        // slower than required
+        dot.style.backgroundColor = "yellow";
     }
 }
 
